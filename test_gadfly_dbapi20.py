@@ -1,24 +1,24 @@
 #!/usr/bin/env python
 '''
-$Id: test_gadfly_dbapi20.py,v 1.7 2003/10/09 11:43:04 zenzen Exp $
+$Id: test_gadfly_dbapi20.py,v 1.8 2005/01/02 02:47:57 zenzen Exp $
 '''
 
-__rcs_id__  = '$Id: test_gadfly_dbapi20.py,v 1.7 2003/10/09 11:43:04 zenzen Exp $'
-__version__ = '$Revision: 1.7 $'[11:-2]
+__rcs_id__  = '$Id: test_gadfly_dbapi20.py,v 1.8 2005/01/02 02:47:57 zenzen Exp $'
+__version__ = '$Revision: 1.8 $'[11:-2]
 __author__ = 'Stuart Bishop <zen@shangri-la.dropbear.id.au>'
 
 import unittest
 import shutil
 import os
 import os.path
-import gadfly
+import gadfly.dbapi20
 import dbapi20
 
 #dbdir = os.path.abspath(os.path.join(os.path.dirname(__file__),'_db_dir'))
 dbdir = os.path.abspath(os.path.join(".",'_db_dir'))
 
 class test_GadflyDBAPI20(dbapi20.DatabaseAPI20Test):
-    driver = gadfly
+    driver = gadfly.dbapi20
     connect_kw_args = {'databasename': 'test', 'directory': dbdir}
 
     def setUp(self):
