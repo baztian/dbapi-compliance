@@ -1,16 +1,21 @@
 #!/usr/bin/env python
 '''
-$Id: dbapi20.py,v 1.5 2003/02/17 22:08:43 zenzen Exp $
+$Id: dbapi20.py,v 1.6 2003/02/21 03:04:33 zenzen Exp $
 '''
 
-__rcs_id__  = '$Id: dbapi20.py,v 1.5 2003/02/17 22:08:43 zenzen Exp $'
-__version__ = '$Revision: 1.5 $'[11:-2]
+__rcs_id__  = '$Id: dbapi20.py,v 1.6 2003/02/21 03:04:33 zenzen Exp $'
+__version__ = '$Revision: 1.6 $'[11:-2]
 __author__ = 'Stuart Bishop <zen@shangri-la.dropbear.id.au>'
 
 import unittest
 import time
 
 # $Log: dbapi20.py,v $
+# Revision 1.6  2003/02/21 03:04:33  zenzen
+# Stuff from Henrik Ekelund:
+#     added test_None
+#     added test_nextset & hooks
+#
 # Revision 1.5  2003/02/17 22:08:43  zenzen
 # Implement suggestions and code from Henrik Eklund - test that cursor.arraysize
 # defaults to 1 & generic cursor.callproc test added
@@ -270,7 +275,8 @@ class DatabaseAPI20Test(unittest.TestCase):
             cur = con.cursor()
             if self.lower_func and hasattr(cur,'callproc'):
                 r = cur.callproc(self.lower_func,('FOO',))
-                self.assertEqual(r,('FOO',))
+                self.assertEqual(len(r),1)
+                self.assertEqual(r[0],'FOO')
                 r = cur.fetchall()
                 self.assertEqual(len(r),1,'callproc produced no result set')
                 self.assertEqual(len(r[0]),1,
@@ -599,6 +605,54 @@ class DatabaseAPI20Test(unittest.TestCase):
         finally:
             con.close()
 
+    def help_nextset_setUp(self,cur):
+        ''' Should create a procedure called deleteme
+            that returns two result sets, first the 
+	    number of rows in booze then "name from booze"
+        '''
+        raise NotImplementedError,'Helper not implemented'
+        #sql="""
+        #    create procedure deleteme as
+        #    begin
+        #        select count(*) from booze
+        #        select name from booze
+        #    end
+        #"""
+        #cur.execute(sql)
+
+    def help_nextset_tearDown(self,cur):
+        'If cleaning up is needed after nextSetTest'
+        raise NotImplementedError,'Helper not implemented'
+        #cur.execute("drop procedure deleteme")
+
+    def test_nextset(self):
+        con = self._connect()
+        try:
+            cur = con.cursor()
+            if not hasattr(cur,'nextset'):
+                return
+
+            try:
+                sql=self._populate()
+                for sql in self._populate():
+                    cur.execute(sql)
+
+                self.help_nextset_setUp(cur)
+
+                cur.callproc('deleteme')
+                numberofrows=cur.fetchone()
+                assert numberofrows[0]== len(self.samples)
+                assert cur.nextset()
+                names=cur.fetchall()
+                assert len(names) == len(self.samples)
+                s=cur.nextset()
+                assert s == None,'No more return sets, should return None'
+            finally:
+                self.help_nextset_tearDown(cur)
+
+        finally:
+            con.close()
+
     def test_nextset(self):
         raise NotImplementedError,'Drivers need to override this test'
 
@@ -636,6 +690,20 @@ class DatabaseAPI20Test(unittest.TestCase):
     def test_setoutputsize(self):
         # Real test for setoutputsize is driver dependant
         raise NotImplementedError,'Driver need to override this test'
+
+    def test_None(self):
+        con = self._connect()
+        try:
+            cur = con.cursor()
+            cur.execute(self.ddl1)
+            cur.execute('insert into booze values (NULL)')
+            cur.execute('select name from booze')
+            r = cur.fetchall()
+            self.assertEqual(len(r),1)
+            self.assertEqual(len(r[0]),1)
+            self.assertEqual(r[0][0],None,'NULL value not returned as None')
+        finally:
+            con.close()
 
     def test_Date(self):
         d1 = self.driver.Date(2002,12,25)
