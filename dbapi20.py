@@ -11,14 +11,17 @@
     -- Ian Bicking
 '''
 
-__rcs_id__  = '$Id: dbapi20.py,v 1.10 2003/10/09 03:14:14 zenzen Exp $'
-__version__ = '$Revision: 1.10 $'[11:-2]
-__author__ = 'Stuart Bishop <zen@shangri-la.dropbear.id.au>'
+__rcs_id__  = '$Id: dbapi20.py,v 1.11 2005/01/02 02:41:01 zenzen Exp $'
+__version__ = '$Revision: 1.11 $'[11:-2]
+__author__ = 'Stuart Bishop <stuart@stuartbishop.net>'
 
 import unittest
 import time
 
 # $Log: dbapi20.py,v $
+# Revision 1.11  2005/01/02 02:41:01  zenzen
+# Update author email address
+#
 # Revision 1.10  2003/10/09 03:14:14  zenzen
 # Add test for DB API 2.0 optional extension, where database exceptions
 # are exposed as attributes on the Connection object.
