@@ -1,16 +1,36 @@
 #!/usr/bin/env python
 '''
-$Id: dbapi20.py,v 1.3 2003/02/12 22:54:38 zenzen Exp $
+$Id: dbapi20.py,v 1.4 2003/02/15 00:16:33 zenzen Exp $
 '''
 
-__rcs_id__  = '$Id: dbapi20.py,v 1.3 2003/02/12 22:54:38 zenzen Exp $'
-__version__ = '$Revision: 1.3 $'[11:-2]
+__rcs_id__  = '$Id: dbapi20.py,v 1.4 2003/02/15 00:16:33 zenzen Exp $'
+__version__ = '$Revision: 1.4 $'[11:-2]
 __author__ = 'Stuart Bishop <zen@shangri-la.dropbear.id.au>'
 
 import unittest
 import time
 
-class test_DBAPI20:
+# $Log: dbapi20.py,v $
+# Revision 1.4  2003/02/15 00:16:33  zenzen
+# Changes, as per suggestions and bug reports by M.-A. Lemburg,
+# Matthew T. Kromer, Federico Di Gregorio and Daniel Dittmar
+# - Class renamed
+# - Now a subclass of TestCase, to avoid requiring the driver stub
+#   to use multiple inheritance
+# - Reversed the polarity of buggy test in test_description
+# - Test exception heirarchy correctly
+# - self.populate is now self._populate(), so if a driver stub
+#   overrides self.ddl1 this change propogates
+# - VARCHAR columns now have a width, which will hopefully make the
+#   DDL even more portible (this will be reversed if it causes more problems)
+# - cursor.rowcount being checked after various execute and fetchXXX methods
+# - Check for fetchall and fetchmany returning empty lists after results
+#   are exhausted (already checking for empty lists if select retrieved
+#   nothing
+# - Fix bugs in test_setoutputsize_basic and test_setinputsizes
+#
+
+class DatabaseAPI20Test(unittest.TestCase):
     ''' Test a database self.driver for DB API 2.0 compatibility.
         This implementation tests Gadfly, but the TestCase
         is structured so that other self.drivers can subclass this 
@@ -23,9 +43,13 @@ class test_DBAPI20:
         self.drivers should subclass this test, overriding setUp, tearDown,
         self.driver, connect_args and connect_kw_args. Class specification
         should be as follows:
-        import dbapi20
-        class mytest(dbapi20.test_DBAPI20,unittest.TestCase):
+
+        import dbapi20 
+        class mytest(dbapi20.DatabaseAPI20Test):
            [...] 
+
+        Don't 'import DatabaseAPI20Test from dbapi20', or you will
+        confuse the unit tester - just 'import dbapi20'.
     '''
 
     # The self.driver module. This should be the module where the 'connect'
@@ -34,10 +58,12 @@ class test_DBAPI20:
     connect_args = () # List of arguments to pass to connect
     connect_kw_args = {} # Keyword arguments for connect
 
-    ddl1 = 'create table booze (name varchar)'
-    ddl2 = 'create table barflys (name varchar)'
+    ddl1 = 'create table booze (name varchar(20))'
+    ddl2 = 'create table barflys (name varchar(20))'
     xddl1 = 'drop table booze'
     xddl2 = 'drop table barflys'
+
+    lowerfunc = 'lower' # Name of stored procedure to convert string->lowercase
         
     def setUp(self):
         ''' self.drivers should override this method to perform required setup
@@ -109,13 +135,27 @@ class test_DBAPI20:
         # defined heirarchy.
         self.failUnless(issubclass(self.driver.Warning,StandardError))
         self.failUnless(issubclass(self.driver.Error,StandardError))
-        self.failUnless(issubclass(self.driver.InterfaceError,StandardError))
-        self.failUnless(issubclass(self.driver.DatabaseError,StandardError))
-        self.failUnless(issubclass(self.driver.OperationalError,StandardError))
-        self.failUnless(issubclass(self.driver.IntegrityError,StandardError))
-        self.failUnless(issubclass(self.driver.InternalError,StandardError))
-        self.failUnless(issubclass(self.driver.ProgrammingError,StandardError))
-        self.failUnless(issubclass(self.driver.NotSupportedError,StandardError))
+        self.failUnless(
+            issubclass(self.driver.InterfaceError,self.driver.Error)
+            )
+        self.failUnless(
+            issubclass(self.driver.DatabaseError,self.driver.Error)
+            )
+        self.failUnless(
+            issubclass(self.driver.OperationalError,self.driver.Error)
+            )
+        self.failUnless(
+            issubclass(self.driver.IntegrityError,self.driver.Error)
+            )
+        self.failUnless(
+            issubclass(self.driver.InternalError,self.driver.Error)
+            )
+        self.failUnless(
+            issubclass(self.driver.ProgrammingError,self.driver.Error)
+            )
+        self.failUnless(
+            issubclass(self.driver.NotSupportedError,self.driver.Error)
+            )
 
     def test_commit(self):
         con = self._connect()
@@ -132,7 +172,7 @@ class test_DBAPI20:
         if hasattr(con,'rollback'):
             try:
                 con.rollback()
-            except NotSupportedError:
+            except self.driver.NotSupportedError:
                 pass
     
     def test_cursor(self):
@@ -178,7 +218,7 @@ class test_DBAPI20:
             self.assertEqual(cur.description[0][0].lower(),'name',
                 'cursor.description[x][0] must return column name'
                 )
-            self.failIfEqual(cur.description[0][1],self.driver.STRING,
+            self.assertEqual(cur.description[0][1],self.driver.STRING,
                 'cursor.description[x][1] must return column type. Got %r'
                     % cur.description[0][1]
                 )
@@ -211,7 +251,7 @@ class test_DBAPI20:
                 'cursor.rowcount should == number of rows returned, or '
                 'set to -1 after executing a select statement'
                 )
-            cur.execute(ddl2)
+            cur.execute(self.ddl2)
             self.assertEqual(cur.rowcount,-1,
                 'cursor.rowcount not being reset to -1 after executing '
                 'no-result statements'
@@ -254,6 +294,8 @@ class test_DBAPI20:
     def _paraminsert(self,cur):
         cur.execute(self.ddl1)
         cur.execute("insert into booze values ('Victoria Bitter')")
+        self.failUnless(cur.rowcount in (-1,1))
+
         if self.driver.paramstyle == 'qmark':
             cur.execute('insert into booze values (?)',("Cooper's",))
         elif self.driver.paramstyle == 'numeric':
@@ -270,17 +312,19 @@ class test_DBAPI20:
                 )
         else:
             self.fail('Invalid paramstyle')
+        self.failUnless(cur.rowcount in (-1,1))
+
         cur.execute('select name from booze')
         res = cur.fetchall()
         self.assertEqual(len(res),2,'cursor.fetchall returned too few rows')
         beers = [res[0][0],res[1][0]]
         beers.sort()
         self.assertEqual(beers[0],"Cooper's",
-            'cursor.fetchall retrieved invalid data, or data inserted '
+            'cursor.fetchall retrieved incorrect data, or data inserted '
             'incorrectly'
             )
         self.assertEqual(beers[1],"Victoria Bitter",
-            'cursor.fetchall retrieved invalid data, or data inserted '
+            'cursor.fetchall retrieved incorrect data, or data inserted '
             'incorrectly'
             )
 
@@ -303,6 +347,10 @@ class test_DBAPI20:
                 cur.executemany('insert into booze values (%(beer)s)',margs)
             else:
                 self.fail('Unknown paramstyle')
+            self.failUnless(cur.rowcount in (-1,2),
+                'insert using cursor.executemany set cursor.rowcount to '
+                'incorrect value %r' % cur.rowcount
+                )
             cur.execute('select name from booze')
             res = cur.fetchall()
             self.assertEqual(len(res),2,
@@ -329,6 +377,13 @@ class test_DBAPI20:
             cur.execute(self.ddl1)
             self.assertRaises(self.driver.Error,cur.fetchone)
 
+            cur.execute('select name from booze')
+            self.assertEqual(cur.fetchone(),None,
+                'cursor.fetchone should return None if a query retrieves '
+                'no rows'
+                )
+            self.failUnless(cur.rowcount in (-1,0))
+
             # cursor.fetchone should raise an Error if called after
             # executing a query that cannnot return rows
             cur.execute("insert into booze values ('Victoria Bitter')")
@@ -345,6 +400,7 @@ class test_DBAPI20:
             self.assertEqual(cur.fetchone(),None,
                 'cursor.fetchone should return None if no more rows available'
                 )
+            self.failUnless(cur.rowcount in (-1,1))
         finally:
             con.close()
 
@@ -357,8 +413,13 @@ class test_DBAPI20:
         'XXXX'
         ]
 
-    populate = [ddl1,] +  \
-        ["insert into booze values ('%s')" % s for s in samples]
+    def _populate(self):
+        ''' Return a list of sql commands to setup the DB for the fetch
+            tests.
+        '''
+        populate = [self.ddl1,] +  \
+            ["insert into booze values ('%s')" % s for s in self.samples]
+        return populate
 
     def test_fetchmany(self):
         con = self._connect()
@@ -369,7 +430,7 @@ class test_DBAPI20:
             #issuing a query
             self.assertRaises(self.driver.Error,cur.fetchmany,4)
 
-            for sql in self.populate:
+            for sql in self._populate():
                 cur.execute(sql)
 
             cur.arraysize=10
@@ -387,6 +448,7 @@ class test_DBAPI20:
                 'cursor.fetchmany should return an empty sequence after '
                 'results are exhausted'
             )
+            self.failUnless(cur.rowcount in (-1,6))
 
             # Same as above, using cursor.arraysize
             cur.arraysize=4
@@ -399,10 +461,12 @@ class test_DBAPI20:
             self.assertEqual(len(r),2)
             r = cur.fetchmany() # Should be an empty sequence
             self.assertEqual(len(r),0)
+            self.failUnless(cur.rowcount in (-1,6))
 
             cur.arraysize=6
             cur.execute('select name from booze')
             rows = cur.fetchmany() # Should get all rows
+            self.failUnless(cur.rowcount in (-1,6))
             self.assertEqual(len(rows),6)
             self.assertEqual(len(rows),6)
             rows = [r[0] for r in rows]
@@ -414,6 +478,13 @@ class test_DBAPI20:
                     'incorrect data retrieved by cursor.fetchmany'
                     )
 
+            rows = cur.fetchmany() # Should return an empty list
+            self.assertEqual(len(rows),0,
+                'cursor.fetchmany should return an empty sequence if '
+                'called after the whole result set has been fetched'
+                )
+            self.failUnless(cur.rowcount in (-1,6))
+
             cur.execute(self.ddl2)
             cur.execute('select name from barflys')
             r = cur.fetchmany() # Should get empty sequence
@@ -421,6 +492,7 @@ class test_DBAPI20:
                 'cursor.fetchmany should return an empty sequence if '
                 'query retrieved no rows'
                 )
+            self.failUnless(cur.rowcount in (-1,0))
 
         finally:
             con.close()
@@ -434,7 +506,7 @@ class test_DBAPI20:
             # as a select)
             self.assertRaises(self.driver.Error, cur.fetchall)
 
-            for sql in self.populate:
+            for sql in self._populate():
                 cur.execute(sql)
 
             # cursor.fetchall should raise an Error if called
@@ -443,6 +515,7 @@ class test_DBAPI20:
 
             cur.execute('select name from booze')
             rows = cur.fetchall()
+            self.failUnless(cur.rowcount in (-1,len(self.samples)))
             self.assertEqual(len(rows),len(self.samples),
                 'cursor.fetchall did not retrieve all rows'
                 )
@@ -452,10 +525,18 @@ class test_DBAPI20:
                 self.assertEqual(rows[i],self.samples[i],
                 'cursor.fetchall retrieved incorrect rows'
                 )
+            rows = cur.fetchall()
+            self.assertEqual(
+                len(rows),0,
+                'cursor.fetchall should return an empty list if called '
+                'after the whole result set has been fetched'
+                )
+            self.failUnless(cur.rowcount in (-1,len(self.samples)))
 
             cur.execute(self.ddl2)
             cur.execute('select name from barflys')
             rows = cur.fetchall()
+            self.failUnless(cur.rowcount in (-1,0))
             self.assertEqual(len(rows),0,
                 'cursor.fetchall should return an empty list if '
                 'a select query returns no rows'
@@ -468,7 +549,7 @@ class test_DBAPI20:
         con = self._connect()
         try:
             cur = con.cursor()
-            for sql in self.populate:
+            for sql in self._populate():
                 cur.execute(sql)
 
             cur.execute('select name from booze')
@@ -476,6 +557,7 @@ class test_DBAPI20:
             rows23 = cur.fetchmany(2)
             rows4  = cur.fetchone()
             rows56 = cur.fetchall()
+            self.failUnless(cur.rowcount in (-1,6))
             self.assertEqual(len(rows23),2,
                 'fetchmany returned incorrect number of rows'
                 )
@@ -513,21 +595,19 @@ class test_DBAPI20:
         con = self._connect()
         try:
             cur = con.cursor()
-            cur.execute(self.ddl1)
             cur.setinputsizes( (25,) )
-            self._paraminsert(cur)
+            self._paraminsert(cur) # Make sure cursor still works
         finally:
             con.close()
 
     def test_setoutputsize_basic(self):
-        # Basic test is to make sure it doesn't blow up
+        # Basic test is to make sure setoutputsize doesn't blow up
         con = self._connect()
         try:
             cur = con.cursor()
-            cur.execute(self.ddl1)
             cur.setoutputsize(1000)
             cur.setoutputsize(2000,0)
-            self._paraminsert(cur)
+            self._paraminsert(cur) # Make sure the cursor still works
         finally:
             con.close()
 
