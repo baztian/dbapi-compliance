@@ -1,16 +1,20 @@
 #!/usr/bin/env python
 '''
-$Id: dbapi20.py,v 1.4 2003/02/15 00:16:33 zenzen Exp $
+$Id: dbapi20.py,v 1.5 2003/02/17 22:08:43 zenzen Exp $
 '''
 
-__rcs_id__  = '$Id: dbapi20.py,v 1.4 2003/02/15 00:16:33 zenzen Exp $'
-__version__ = '$Revision: 1.4 $'[11:-2]
+__rcs_id__  = '$Id: dbapi20.py,v 1.5 2003/02/17 22:08:43 zenzen Exp $'
+__version__ = '$Revision: 1.5 $'[11:-2]
 __author__ = 'Stuart Bishop <zen@shangri-la.dropbear.id.au>'
 
 import unittest
 import time
 
 # $Log: dbapi20.py,v $
+# Revision 1.5  2003/02/17 22:08:43  zenzen
+# Implement suggestions and code from Henrik Eklund - test that cursor.arraysize
+# defaults to 1 & generic cursor.callproc test added
+#
 # Revision 1.4  2003/02/15 00:16:33  zenzen
 # Changes, as per suggestions and bug reports by M.-A. Lemburg,
 # Matthew T. Kromer, Federico Di Gregorio and Daniel Dittmar
@@ -259,11 +263,24 @@ class DatabaseAPI20Test(unittest.TestCase):
         finally:
             con.close()
 
+    lower_func = 'lower'
     def test_callproc(self):
-        # Cannot write a generic test. self.driver's implementations of this
-        # TestCase should implement this test. self.drivers that don't support
-        # stored procedures should just 'pass'
-        raise NotImplementedError,'Driver testcase should override this test'
+        con = self._connect()
+        try:
+            cur = con.cursor()
+            if self.lower_func and hasattr(cur,'callproc'):
+                r = cur.callproc(self.lower_func,('FOO',))
+                self.assertEqual(r,('FOO',))
+                r = cur.fetchall()
+                self.assertEqual(len(r),1,'callproc produced no result set')
+                self.assertEqual(len(r[0]),1,
+                    'callproc produced invalid result set'
+                    )
+                self.assertEqual(r[0][0],'foo',
+                    'callproc produced invalid results'
+                    )
+        finally:
+            con.close()
 
     def test_close(self):
         con = self._connect()
@@ -433,10 +450,15 @@ class DatabaseAPI20Test(unittest.TestCase):
             for sql in self._populate():
                 cur.execute(sql)
 
-            cur.arraysize=10
             cur.execute('select name from booze')
-            r = cur.fetchmany(4) # Should get 4 rows
-            self.assertEqual(len(r),4,
+            r = cur.fetchmany()
+            self.assertEqual(len(r),1,
+                'cursor.fetchmany retrieved incorrect number of rows, '
+                'default of arraysize is one.'
+                )
+            cur.arraysize=10
+            r = cur.fetchmany(3) # Should get 3 rows
+            self.assertEqual(len(r),3,
                 'cursor.fetchmany retrieved incorrect number of rows'
                 )
             r = cur.fetchmany(4) # Should get 2 more
