@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 '''
-$Id: dbapi20.py,v 1.6 2003/02/21 03:04:33 zenzen Exp $
+$Id: dbapi20.py,v 1.7 2003/02/26 23:33:37 zenzen Exp $
 '''
 
-__rcs_id__  = '$Id: dbapi20.py,v 1.6 2003/02/21 03:04:33 zenzen Exp $'
-__version__ = '$Revision: 1.6 $'[11:-2]
+__rcs_id__  = '$Id: dbapi20.py,v 1.7 2003/02/26 23:33:37 zenzen Exp $'
+__version__ = '$Revision: 1.7 $'[11:-2]
 __author__ = 'Stuart Bishop <zen@shangri-la.dropbear.id.au>'
 
 import unittest
 import time
 
 # $Log: dbapi20.py,v $
+# Revision 1.7  2003/02/26 23:33:37  zenzen
+# Break out DDL into helper functions, as per request by David Rushby
+#
 # Revision 1.6  2003/02/21 03:04:33  zenzen
 # Stuff from Henrik Ekelund:
 #     added test_None
@@ -74,6 +77,14 @@ class DatabaseAPI20Test(unittest.TestCase):
 
     lowerfunc = 'lower' # Name of stored procedure to convert string->lowercase
         
+    # Some drivers may need to override these helpers, for example adding
+    # a 'commit' after the execute.
+    def executeDDL1(self,cursor):
+        cursor.execute(self.ddl1)
+
+    def executeDDL2(self,cursor):
+        cursor.execute(self.ddl2)
+
     def setUp(self):
         ''' self.drivers should override this method to perform required setup
             if any is necessary, such as creating the database.
@@ -91,6 +102,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             for ddl in (self.xddl1,self.xddl2):
                 try: 
                     cur.execute(ddl)
+                    con.commit()
                 except self.driver.Error: 
                     # Assume table didn't exist. Other tests will check if
                     # execute is busted.
@@ -198,7 +210,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             # the documented transaction isolation level
             cur1 = con.cursor()
             cur2 = con.cursor()
-            cur1.execute(self.ddl1)
+            self.executeDDL1(cur1)
             cur1.execute("insert into booze values ('Victoria Bitter')")
             cur2.execute("select name from booze")
             booze = cur2.fetchall()
@@ -212,7 +224,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            cur.execute(self.ddl1)
+            self.executeDDL1(cur)
             self.assertEqual(cur.description,None,
                 'cursor.description should be none after executing a '
                 'statement that can return no rows (such as DDL)'
@@ -233,7 +245,7 @@ class DatabaseAPI20Test(unittest.TestCase):
                 )
 
             # Make sure self.description gets reset
-            cur.execute(self.ddl2)
+            self.executeDDL2(cur)
             self.assertEqual(cur.description,None,
                 'cursor.description not being set to None when executing '
                 'no-result statements (eg. DDL)'
@@ -245,7 +257,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            cur.execute(self.ddl1)
+            self.executeDDL1(cur)
             self.assertEqual(cur.rowcount,-1,
                 'cursor.rowcount should be -1 after executing no-result '
                 'statements'
@@ -260,7 +272,7 @@ class DatabaseAPI20Test(unittest.TestCase):
                 'cursor.rowcount should == number of rows returned, or '
                 'set to -1 after executing a select statement'
                 )
-            cur.execute(self.ddl2)
+            self.executeDDL2(cur)
             self.assertEqual(cur.rowcount,-1,
                 'cursor.rowcount not being reset to -1 after executing '
                 'no-result statements'
@@ -297,7 +309,7 @@ class DatabaseAPI20Test(unittest.TestCase):
 
         # cursor.execute should raise an Error if called after connection
         # closed
-        self.assertRaises(self.driver.Error,cur.execute,self.ddl1)
+        self.assertRaises(self.driver.Error,self.executeDDL1,cur)
 
         # connection.commit should raise an Error if called after connection'
         # closed.'
@@ -315,7 +327,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             con.close()
 
     def _paraminsert(self,cur):
-        cur.execute(self.ddl1)
+        self.executeDDL1(cur)
         cur.execute("insert into booze values ('Victoria Bitter')")
         self.failUnless(cur.rowcount in (-1,1))
 
@@ -355,7 +367,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            cur.execute(self.ddl1)
+            self.executeDDL1(cur)
             largs = [ ("Cooper's",) , ("Boag's",) ]
             margs = [ {'beer': "Cooper's"}, {'beer': "Boag's"} ]
             if self.driver.paramstyle == 'qmark':
@@ -397,7 +409,7 @@ class DatabaseAPI20Test(unittest.TestCase):
 
             # cursor.fetchone should raise an Error if called after
             # executing a query that cannnot return rows
-            cur.execute(self.ddl1)
+            self.executeDDL1(cur)
             self.assertRaises(self.driver.Error,cur.fetchone)
 
             cur.execute('select name from booze')
@@ -440,8 +452,9 @@ class DatabaseAPI20Test(unittest.TestCase):
         ''' Return a list of sql commands to setup the DB for the fetch
             tests.
         '''
-        populate = [self.ddl1,] +  \
-            ["insert into booze values ('%s')" % s for s in self.samples]
+        populate = [
+            "insert into booze values ('%s')" % s for s in self.samples
+            ]
         return populate
 
     def test_fetchmany(self):
@@ -453,6 +466,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             #issuing a query
             self.assertRaises(self.driver.Error,cur.fetchmany,4)
 
+            self.executeDDL1(cur)
             for sql in self._populate():
                 cur.execute(sql)
 
@@ -513,7 +527,7 @@ class DatabaseAPI20Test(unittest.TestCase):
                 )
             self.failUnless(cur.rowcount in (-1,6))
 
-            cur.execute(self.ddl2)
+            self.executeDDL2(cur)
             cur.execute('select name from barflys')
             r = cur.fetchmany() # Should get empty sequence
             self.assertEqual(len(r),0,
@@ -534,6 +548,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             # as a select)
             self.assertRaises(self.driver.Error, cur.fetchall)
 
+            self.executeDDL1(cur)
             for sql in self._populate():
                 cur.execute(sql)
 
@@ -561,7 +576,7 @@ class DatabaseAPI20Test(unittest.TestCase):
                 )
             self.failUnless(cur.rowcount in (-1,len(self.samples)))
 
-            cur.execute(self.ddl2)
+            self.executeDDL2(cur)
             cur.execute('select name from barflys')
             rows = cur.fetchall()
             self.failUnless(cur.rowcount in (-1,0))
@@ -577,6 +592,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
+            self.executeDDL1(cur)
             for sql in self._populate():
                 cur.execute(sql)
 
@@ -633,6 +649,7 @@ class DatabaseAPI20Test(unittest.TestCase):
                 return
 
             try:
+                self.executeDDL1(cur)
                 sql=self._populate()
                 for sql in self._populate():
                     cur.execute(sql)
@@ -695,7 +712,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            cur.execute(self.ddl1)
+            self.executeDDL1(cur)
             cur.execute('insert into booze values (NULL)')
             cur.execute('select name from booze')
             r = cur.fetchall()
