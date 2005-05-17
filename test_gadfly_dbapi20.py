@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 '''
-$Id: test_gadfly_dbapi20.py,v 1.8 2005/01/02 02:47:57 zenzen Exp $
+$Id: test_gadfly_dbapi20.py,v 1.9 2005/05/18 04:07:44 zenzen Exp $
 '''
 
-__rcs_id__  = '$Id: test_gadfly_dbapi20.py,v 1.8 2005/01/02 02:47:57 zenzen Exp $'
-__version__ = '$Revision: 1.8 $'[11:-2]
+__rcs_id__  = '$Id: test_gadfly_dbapi20.py,v 1.9 2005/05/18 04:07:44 zenzen Exp $'
+__version__ = '$Revision: 1.9 $'[11:-2]
 __author__ = 'Stuart Bishop <zen@shangri-la.dropbear.id.au>'
 
 import unittest
@@ -76,6 +76,9 @@ class test_GadflyDBAPI20(dbapi20.DatabaseAPI20Test):
                 str(gadfly.TimestampFromTicks(groundhog_day)),
                 '2003-02-02 08:21:02'
                 )
+
+def suite():
+    return unittest.makeSuite(test_GadflyDBAPI20)
 
 if __name__ == '__main__':
     unittest.main()
