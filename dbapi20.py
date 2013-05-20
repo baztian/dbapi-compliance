@@ -11,7 +11,7 @@
     -- Ian Bicking
 '''
 
-__version__ = '$Revision: 1.14 $'[11:-2]
+__version__ = '$Revision: 1.14.1 $'[11:-2]
 __author__ = 'Stuart Bishop <stuart@stuartbishop.net>'
 
 import unittest
@@ -410,34 +410,34 @@ class DatabaseAPI20Test(unittest.TestCase):
 
     def _paraminsert(self,cur):
         self.executeDDL2(cur)
-        cur.execute("insert into %sbarflys values ('Victoria Bitter', 'thi%%s :may cau%%s(e)? troub:1e')" % (
+        cur.execute("insert into %sbarflys values ('Victoria Bitter', 'thi%%s :may ca%%(u)se? troub:1e')" % (
             self.table_prefix
             ))
         self.failUnless(cur.rowcount in (-1,1))
 
         if self.driver.paramstyle == 'qmark':
             cur.execute(
-                "insert into %sbarflys values (?, 'thi%%s :may cau%%s(e)? troub:1e')" % self.table_prefix,
+                "insert into %sbarflys values (?, 'thi%%s :may ca%%(u)se? troub:1e')" % self.table_prefix,
                 ("Cooper's",)
                 )
         elif self.driver.paramstyle == 'numeric':
             cur.execute(
-                "insert into %sbarflys values (:1, 'thi%%s :may cau%%s(e)? troub:1e')" % self.table_prefix,
+                "insert into %sbarflys values (:1, 'thi%%s :may ca%%(u)se? troub:1e')" % self.table_prefix,
                 ("Cooper's",)
                 )
         elif self.driver.paramstyle == 'named':
             cur.execute(
-                "insert into %sbarflys values (:beer, 'thi%%s :may cau%%s(e)? troub:1e')" % self.table_prefix, 
+                "insert into %sbarflys values (:beer, 'thi%%s :may ca%%(u)se? troub:1e')" % self.table_prefix, 
                 {'beer':"Cooper's"}
                 )
         elif self.driver.paramstyle == 'format':
             cur.execute(
-                "insert into %sbarflys values (%%s, 'thi%%s :may cau%%s(e)? troub:1e')" % self.table_prefix,
+                "insert into %sbarflys values (%%s, 'thi%%s :may ca%%(u)se? troub:1e')" % self.table_prefix,
                 ("Cooper's",)
                 )
         elif self.driver.paramstyle == 'pyformat':
             cur.execute(
-                "insert into %sbarflys values (%%(beer)s, 'thi%%s :may cau%%s(e)? troub:1e')" % self.table_prefix,
+                "insert into %sbarflys values (%%(beer)s, 'thi%%s :may ca%%(u)se? troub:1e')" % self.table_prefix,
                 {'beer':"Cooper's"}
                 )
         else:
@@ -457,7 +457,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             'cursor.fetchall retrieved incorrect data, or data inserted '
             'incorrectly'
             )
-        trouble = "thi%s :may cau%s(e)? troub:1e"
+        trouble = "thi%s :may ca%(u)se? troub:1e"
         self.assertEqual(res[0][1], trouble,
             'cursor.fetchall retrieved incorrect data, or data inserted '
             'incorrectly. Got=%s, Expected=%s' % (repr(res[0][1]), repr(trouble)))      
