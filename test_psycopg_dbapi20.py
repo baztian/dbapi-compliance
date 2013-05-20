@@ -8,7 +8,7 @@ import psycopg2  # Bug #877952
 import popen2
 
 class test_Psycopg(dbapi20.DatabaseAPI20Test):
-    driver = psycopg
+    driver = psycopg2
     connect_args = ()
     connect_kw_args = {'dsn': 'dbname=dbapi20_test'}
 
