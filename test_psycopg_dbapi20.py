@@ -4,7 +4,7 @@
 
 import dbapi20
 import unittest
-import psycopg
+import psycopg2  # Bug #877952
 import popen2
 
 class test_Psycopg(dbapi20.DatabaseAPI20Test):

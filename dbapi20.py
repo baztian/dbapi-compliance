@@ -11,14 +11,26 @@
     -- Ian Bicking
 '''
 
-__rcs_id__  = '$Id: dbapi20.py,v 1.11 2005/01/02 02:41:01 zenzen Exp $'
-__version__ = '$Revision: 1.12 $'[11:-2]
+__version__ = '$Revision: 1.14 $'[11:-2]
 __author__ = 'Stuart Bishop <stuart@stuartbishop.net>'
 
 import unittest
 import time
 import sys
 
+if sys.version[0] >= '3': #python 3.x
+    _BaseException = Exception
+else:                   #python 2.x
+    from exceptions import StandardError as _BaseException
+
+# set this to "True" to follow API 2.0 to the letter
+I_REALLY_WANT_IDEMPOTENT_CLOSE = True
+
+# Revision 1.14  2013/05/20 11:02:05  kf7xm
+# Add a literal string to the format insertion test to catch trivial re-format algorthims
+
+# Revision 1.13  2013/05/08 14:31:50  kf7xm
+# Quick switch to Turn off IDEMPOTENT_CLOSE test. Also: Silence teardown failure
 
 # Revision 1.12  2009/02/06 03:35:11  kf7xm
 # Tested okay with Python 3.0, includes last minute patches from Mark H.
@@ -74,7 +86,7 @@ import sys
 def str2bytes(sval):
     if sys.version_info < (3,0) and isinstance(sval, str):
         sval = sval.decode("latin1")
-    return sval.encode("latin1")
+    return sval.encode("latin1") #python 3 make unicode into bytes
 
 class DatabaseAPI20Test(unittest.TestCase):
     ''' Test a database self.driver for DB API 2.0 compatibility.
@@ -106,7 +118,7 @@ class DatabaseAPI20Test(unittest.TestCase):
     table_prefix = 'dbapi20test_' # If you need to specify a prefix for tables
 
     ddl1 = 'create table %sbooze (name varchar(20))' % table_prefix
-    ddl2 = 'create table %sbarflys (name varchar(20))' % table_prefix
+    ddl2 = 'create table %sbarflys (name varchar(20), drink varchar(30))' % table_prefix
     xddl1 = 'drop table %sbooze' % table_prefix
     xddl2 = 'drop table %sbarflys' % table_prefix
 
@@ -131,27 +143,31 @@ class DatabaseAPI20Test(unittest.TestCase):
             if any is necessary, such as deleting the test database.
             The default drops the tables that may be created.
         '''
-        con = self._connect()
         try:
-            cur = con.cursor()
-            for ddl in (self.xddl1,self.xddl2):
-                try: 
-                    cur.execute(ddl)
-                    con.commit()
-                except self.driver.Error: 
-                    # Assume table didn't exist. Other tests will check if
-                    # execute is busted.
-                    pass
-        finally:
-            con.close()
+            con = self._connect()
+            try:
+                cur = con.cursor()
+                for ddl in (self.xddl1,self.xddl2):
+                    try:
+                        cur.execute(ddl)
+                        con.commit()
+                    except self.driver.Error:
+                        # Assume table didn't exist. Other tests will check if
+                        # execute is busted.
+                        pass
+            finally:
+                con.close()
+        except _BaseException:
+            pass
 
     def _connect(self):
         try:
-            return self.driver.connect(
+             r = self.driver.connect(
                 *self.connect_args,**self.connect_kw_args
                 )
         except AttributeError:
             self.fail("No connect method found in self.driver module")
+        return r
 
     def test_connect(self):
         con = self._connect()
@@ -320,8 +336,8 @@ class DatabaseAPI20Test(unittest.TestCase):
         try:
             cur = con.cursor()
             self.executeDDL1(cur)
-            self.assertEqual(cur.rowcount,-1,
-                'cursor.rowcount should be -1 after executing no-result '
+            self.failUnless(cur.rowcount in (-1,0),   # Bug #543885 
+                'cursor.rowcount should be -1 or 0 after executing no-result '
                 'statements'
                 )
             cur.execute("insert into %sbooze values ('Victoria Bitter')" % (
@@ -380,7 +396,9 @@ class DatabaseAPI20Test(unittest.TestCase):
         self.assertRaises(self.driver.Error,con.commit)
 
         # connection.close should raise an Error if called more than once
-        self.assertRaises(self.driver.Error,con.close)
+        #!!! reasonable persons differ about the usefulness of this test and this feature !!!
+        if I_REALLY_WANT_IDEMPOTENT_CLOSE:
+            self.assertRaises(self.driver.Error,con.close)
 
     def test_execute(self):
         con = self._connect()
@@ -391,42 +409,42 @@ class DatabaseAPI20Test(unittest.TestCase):
             con.close()
 
     def _paraminsert(self,cur):
-        self.executeDDL1(cur)
-        cur.execute("insert into %sbooze values ('Victoria Bitter')" % (
+        self.executeDDL2(cur)
+        cur.execute("insert into %sbarflys values ('Victoria Bitter', 'thi%%s :may cau%%s(e)? troub:1e')" % (
             self.table_prefix
             ))
         self.failUnless(cur.rowcount in (-1,1))
 
         if self.driver.paramstyle == 'qmark':
             cur.execute(
-                'insert into %sbooze values (?)' % self.table_prefix,
+                "insert into %sbarflys values (?, 'thi%%s :may cau%%s(e)? troub:1e')" % self.table_prefix,
                 ("Cooper's",)
                 )
         elif self.driver.paramstyle == 'numeric':
             cur.execute(
-                'insert into %sbooze values (:1)' % self.table_prefix,
+                "insert into %sbarflys values (:1, 'thi%%s :may cau%%s(e)? troub:1e')" % self.table_prefix,
                 ("Cooper's",)
                 )
         elif self.driver.paramstyle == 'named':
             cur.execute(
-                'insert into %sbooze values (:beer)' % self.table_prefix, 
+                "insert into %sbarflys values (:beer, 'thi%%s :may cau%%s(e)? troub:1e')" % self.table_prefix, 
                 {'beer':"Cooper's"}
                 )
         elif self.driver.paramstyle == 'format':
             cur.execute(
-                'insert into %sbooze values (%%s)' % self.table_prefix,
+                "insert into %sbarflys values (%%s, 'thi%%s :may cau%%s(e)? troub:1e')" % self.table_prefix,
                 ("Cooper's",)
                 )
         elif self.driver.paramstyle == 'pyformat':
             cur.execute(
-                'insert into %sbooze values (%%(beer)s)' % self.table_prefix,
+                "insert into %sbarflys values (%%(beer)s, 'thi%%s :may cau%%s(e)? troub:1e')" % self.table_prefix,
                 {'beer':"Cooper's"}
                 )
         else:
             self.fail('Invalid paramstyle')
         self.failUnless(cur.rowcount in (-1,1))
 
-        cur.execute('select name from %sbooze' % self.table_prefix)
+        cur.execute('select name, drink from %sbarflys' % self.table_prefix)
         res = cur.fetchall()
         self.assertEqual(len(res),2,'cursor.fetchall returned too few rows')
         beers = [res[0][0],res[1][0]]
@@ -439,7 +457,15 @@ class DatabaseAPI20Test(unittest.TestCase):
             'cursor.fetchall retrieved incorrect data, or data inserted '
             'incorrectly'
             )
-
+        trouble = "thi%s :may cau%s(e)? troub:1e"
+        self.assertEqual(res[0][1], trouble,
+            'cursor.fetchall retrieved incorrect data, or data inserted '
+            'incorrectly. Got=%s, Expected=%s' % (repr(res[0][1]), repr(trouble)))      
+        self.assertEqual(res[1][1], trouble,
+            'cursor.fetchall retrieved incorrect data, or data inserted '
+            'incorrectly. Got=%s, Expected=%s' % (repr(res[1][1]), repr(trouble)
+            ))
+        
     def test_executemany(self):
         con = self._connect()
         try:
