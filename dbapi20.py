@@ -11,7 +11,7 @@
     -- Ian Bicking
 '''
 
-__version__ = '$Revision: 1.14.2 $'[11:-2]
+__version__ = '$Revision: 1.14.3 $'[11:-2]
 __author__ = 'Stuart Bishop <stuart@stuartbishop.net>'
 
 import unittest
@@ -28,7 +28,7 @@ else:                   #python 2.x
         self.failUnless(expr, msg)  ## deprecated since Python 2.6
 
 # set this to "True" to follow API 2.0 to the letter
-I_REALLY_WANT_IDEMPOTENT_CLOSE = True
+TEST_FOR_NON_IDEMPOTENT_CLOSE = True
 
 # Revision 1.14  2013/05/20 11:02:05  kf7xm
 # Add a literal string to the format insertion test to catch trivial re-format algorthims
@@ -401,7 +401,7 @@ class DatabaseAPI20Test(unittest.TestCase):
 
         # connection.close should raise an Error if called more than once
         #!!! reasonable persons differ about the usefulness of this test and this feature !!!
-        if I_REALLY_WANT_IDEMPOTENT_CLOSE:
+        if TEST_FOR_NON_IDEMPOTENT_CLOSE:
             self.assertRaises(self.driver.Error,con.close)
 
     def test_execute(self):
