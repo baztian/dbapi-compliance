@@ -436,12 +436,12 @@ class DatabaseAPI20Test(unittest.TestCase):
                 )
         elif self.driver.paramstyle == 'format':
             cur.execute(
-                "insert into %sbarflys values (%%s, 'thi%%s :may ca%%(u)se? troub:1e')" % self.table_prefix,
+                "insert into %sbarflys values (%%s, 'thi%%%%s :may ca%%%%(u)se? troub:1e')" % self.table_prefix,
                 ("Cooper's",)
                 )
         elif self.driver.paramstyle == 'pyformat':
             cur.execute(
-                "insert into %sbarflys values (%%(beer)s, 'thi%%s :may ca%%(u)se? troub:1e')" % self.table_prefix,
+                "insert into %sbarflys values (%%(beer)s, 'thi%%%%s :may ca%%%%(u)se? troub:1e')" % self.table_prefix,
                 {'beer':"Cooper's"}
                 )
         else:
