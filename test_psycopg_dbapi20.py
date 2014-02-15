@@ -5,7 +5,7 @@
 import dbapi20
 import unittest
 import psycopg2  # Bug #877952
-import popen2
+import subprocess
 
 class test_Psycopg(dbapi20.DatabaseAPI20Test):
     driver = psycopg2
@@ -23,10 +23,9 @@ class test_Psycopg(dbapi20.DatabaseAPI20Test):
             con = self._connect()
             con.close()
         except:
-            cmd = "psql -c 'create database dbapi20_test'"
-            cout,cin = popen2.popen2(cmd)
-            cin.close()
-            cout.read()
+            cmd = [ "psql", "-c", "create database dbapi20_test" ]
+            if subprocess.call(cmd):
+                self.fail("Failed to create databse.")
 
     def tearDown(self):
         dbapi20.DatabaseAPI20Test.tearDown(self)
