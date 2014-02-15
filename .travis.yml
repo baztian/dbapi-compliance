@@ -1,0 +1,16 @@
+language: python
+
+python:
+  - '2.6'
+  - '2.7'
+  - '3.3'
+
+env:
+  matrix:
+    - DB_NAME=psycopg DRIVER=psycopg2 PGUSER=postgres
+
+install:
+  - if [ -n "$DRIVER" ]; then pip install $DRIVER ;fi
+
+script:
+  - python test_${DB_NAME}_dbapi20.py
