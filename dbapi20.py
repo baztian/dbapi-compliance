@@ -357,9 +357,9 @@ class DatabaseAPI20Test(unittest.TestCase):
                 'set to -1 after executing a select statement'
                 )
             self.executeDDL2(cur)
-            self.assertEqual(cur.rowcount,-1,
-                'cursor.rowcount not being reset to -1 after executing '
-                'no-result statements'
+            _failUnless(self,cur.rowcount in (-1,0),   # Bug #543885
+                'cursor.rowcount should be -1 or 0 after executing no-result '
+                'statements'
                 )
         finally:
             con.close()
