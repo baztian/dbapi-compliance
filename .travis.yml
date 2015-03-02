@@ -3,14 +3,21 @@ language: python
 python:
   - '2.6'
   - '2.7'
-  - '3.3'
+  - '3.4'
 
 env:
   matrix:
     - DB_NAME=psycopg DRIVER=psycopg2 PGUSER=postgres
+    - DB_NAME=jaydebeapi_postgres DRIVER=git+git://github.com/baztian/jaydebeapi.git\#egg=JayDeBeApi JDBC_DRIVER=postgresql:postgresql:9.1-901-1.jdbc4 PGUSER=postgres
+
+matrix:
+  exclude:
+     - python: 3.4
+       env: DB_NAME=jaydebeapi_postgres DRIVER=git+git://github.com/baztian/jaydebeapi.git\#egg=JayDeBeApi JDBC_DRIVER=postgresql:postgresql:9.1-901-1.jdbc4 PGUSER=postgres
 
 install:
   - if [ -n "$DRIVER" ]; then pip install $DRIVER ;fi
+  - if [ -n "$JDBC_DRIVER" ]; then pip install jip==0.7 && jip install $JDBC_DRIVER && export CLASSPATH=$VIRTUAL_ENV/javalib/* ;fi
 
 script:
   - python test_${DB_NAME}_dbapi20.py
