@@ -356,8 +356,8 @@ class DatabaseAPI20Test(unittest.TestCase):
 
     def _paraminsert(self,cur):
         self.executeDDL2(cur)
-        cur.execute("insert into %sbarflys values ('Victoria Bitter', 'thi%%s :may ca%%(u)se? troub:1e')" % (
-            self.table_prefix
+        cur.execute("%s into %sbarflys values ('Victoria Bitter', 'thi%%s :may ca%%(u)se? troub:1e')" % (
+            self.insert, self.table_prefix
             ))
         _failUnless(self,cur.rowcount in (-1,1))
 
