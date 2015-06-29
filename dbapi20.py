@@ -64,6 +64,7 @@ class DatabaseAPI20Test(unittest.TestCase):
     ddl2 = 'create table %sbarflys (name varchar(20), drink varchar(30))' % table_prefix
     xddl1 = 'drop table %sbooze' % table_prefix
     xddl2 = 'drop table %sbarflys' % table_prefix
+    insert = 'insert'
 
     lowerfunc = 'lower' # Name of stored procedure to convert string->lowercase
         
@@ -230,8 +231,8 @@ class DatabaseAPI20Test(unittest.TestCase):
             cur1 = con.cursor()
             cur2 = con.cursor()
             self.executeDDL1(cur1)
-            cur1.execute("insert into %sbooze values ('Victoria Bitter')" % (
-                self.table_prefix
+            cur1.execute("%s into %sbooze values ('Victoria Bitter')" % (
+                self.insert, self.table_prefix
                 ))
             cur2.execute("select name from %sbooze" % self.table_prefix)
             booze = cur2.fetchall()
@@ -283,8 +284,8 @@ class DatabaseAPI20Test(unittest.TestCase):
                 'cursor.rowcount should be -1 or 0 after executing no-result '
                 'statements'
                 )
-            cur.execute("insert into %sbooze values ('Victoria Bitter')" % (
-                self.table_prefix
+            cur.execute("%s into %sbooze values ('Victoria Bitter')" % (
+                self.insert, self.table_prefix
                 ))
             _failUnless(self,cur.rowcount in (-1,1),
                 'cursor.rowcount should == number or rows inserted, or '
@@ -355,34 +356,34 @@ class DatabaseAPI20Test(unittest.TestCase):
 
     def _paraminsert(self,cur):
         self.executeDDL2(cur)
-        cur.execute("insert into %sbarflys values ('Victoria Bitter', 'thi%%s :may ca%%(u)se? troub:1e')" % (
-            self.table_prefix
+        cur.execute("%s into %sbarflys values ('Victoria Bitter', 'thi%%s :may ca%%(u)se? troub:1e')" % (
+            self.insert, self.table_prefix
             ))
         _failUnless(self,cur.rowcount in (-1,1))
 
         if self.driver.paramstyle == 'qmark':
             cur.execute(
-                "insert into %sbarflys values (?, 'thi%%s :may ca%%(u)se? troub:1e')" % self.table_prefix,
+                "%s into %sbarflys values (?, 'thi%%s :may ca%%(u)se? troub:1e')" % (self.insert, self.table_prefix),
                 ("Cooper's",)
                 )
         elif self.driver.paramstyle == 'numeric':
             cur.execute(
-                "insert into %sbarflys values (:1, 'thi%%s :may ca%%(u)se? troub:1e')" % self.table_prefix,
+                "%s into %sbarflys values (:1, 'thi%%s :may ca%%(u)se? troub:1e')" % (self.insert, self.table_prefix),
                 ("Cooper's",)
                 )
         elif self.driver.paramstyle == 'named':
             cur.execute(
-                "insert into %sbarflys values (:beer, 'thi%%s :may ca%%(u)se? troub:1e')" % self.table_prefix, 
+                "%s into %sbarflys values (:beer, 'thi%%s :may ca%%(u)se? troub:1e')" % (self.insert, self.table_prefix),
                 {'beer':"Cooper's"}
                 )
         elif self.driver.paramstyle == 'format':
             cur.execute(
-                "insert into %sbarflys values (%%s, 'thi%%%%s :may ca%%%%(u)se? troub:1e')" % self.table_prefix,
+                "%s into %sbarflys values (%%s, 'thi%%%%s :may ca%%%%(u)se? troub:1e')" % (self.insert, self.table_prefix),
                 ("Cooper's",)
                 )
         elif self.driver.paramstyle == 'pyformat':
             cur.execute(
-                "insert into %sbarflys values (%%(beer)s, 'thi%%%%s :may ca%%%%(u)se? troub:1e')" % self.table_prefix,
+                "%s into %sbarflys values (%%(beer)s, 'thi%%%%s :may ca%%%%(u)se? troub:1e')" % (self.insert, self.table_prefix),
                 {'beer':"Cooper's"}
                 )
         else:
@@ -420,28 +421,28 @@ class DatabaseAPI20Test(unittest.TestCase):
             margs = [ {'beer': "Cooper's"}, {'beer': "Boag's"} ]
             if self.driver.paramstyle == 'qmark':
                 cur.executemany(
-                    'insert into %sbooze values (?)' % self.table_prefix,
+                    '%s into %sbooze values (?)' % (self.insert, self.table_prefix),
                     largs
                     )
             elif self.driver.paramstyle == 'numeric':
                 cur.executemany(
-                    'insert into %sbooze values (:1)' % self.table_prefix,
+                    '%s into %sbooze values (:1)' % (self.insert, self.table_prefix),
                     largs
                     )
             elif self.driver.paramstyle == 'named':
                 cur.executemany(
-                    'insert into %sbooze values (:beer)' % self.table_prefix,
+                    '%s into %sbooze values (:beer)' % (self.insert, self.table_prefix),
                     margs
                     )
             elif self.driver.paramstyle == 'format':
                 cur.executemany(
-                    'insert into %sbooze values (%%s)' % self.table_prefix,
+                    '%s into %sbooze values (%%s)' % (self.insert, self.table_prefix),
                     largs
                     )
             elif self.driver.paramstyle == 'pyformat':
                 cur.executemany(
-                    'insert into %sbooze values (%%(beer)s)' % (
-                        self.table_prefix
+                    '%s into %sbooze values (%%(beer)s)' % (
+                        self.insert, self.table_prefix
                         ),
                     margs
                     )
@@ -486,8 +487,8 @@ class DatabaseAPI20Test(unittest.TestCase):
 
             # cursor.fetchone should raise an Error if called after
             # executing a query that cannnot return rows
-            cur.execute("insert into %sbooze values ('Victoria Bitter')" % (
-                self.table_prefix
+            cur.execute("%s into %sbooze values ('Victoria Bitter')" % (
+                self.insert, self.table_prefix
                 ))
             self.assertRaises(self.driver.Error,cur.fetchone)
 
@@ -520,7 +521,7 @@ class DatabaseAPI20Test(unittest.TestCase):
             tests.
         '''
         populate = [
-            "insert into %sbooze values ('%s')" % (self.table_prefix,s) 
+            "%s into %sbooze values ('%s')" % (self.insert, self.table_prefix, s)
                 for s in self.samples
             ]
         return populate
@@ -781,7 +782,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         try:
             cur = con.cursor()
             self.executeDDL1(cur)
-            cur.execute('insert into %sbooze values (NULL)' % self.table_prefix)
+            cur.execute('%s into %sbooze values (NULL)' % (self.insert, self.table_prefix))
             cur.execute('select name from %sbooze' % self.table_prefix)
             r = cur.fetchall()
             self.assertEqual(len(r),1)
