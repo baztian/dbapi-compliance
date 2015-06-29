@@ -2,27 +2,21 @@ import os
 
 from setuptools import setup
 
-def read(*paths):
-    """Build a file path from *paths* and return the contents."""
-    with open(os.path.join(*paths), 'r') as f:
-        return f.read()
-
 setup(
-    name='pem',
+    name='dbapi20',
     version='1.14.3',
-    description='Parse and split PEM files painlessly.',
-    long_description=("foo"),
-    url='http://github.com/hynek/pem/',
-    license='MIT',
-    author='Hynek Schlawack',
-    author_email='hs@ox.cx',
-    py_modules=['pem'],
+    description='Python DB API 2.0 driver compliance unit test suite.',
+    url='https://github.com/baztian/dbapi-compliance',
+    license='PD',
+    author='Stuart Bishop',
+    author_email='stuart@stuartbishop.net',
+    py_modules=['dbapi2'],
     include_package_data=True,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Natural Language :: English',
-        'License :: OSI Approved :: MIT License',
+        'License :: Public Domain',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
