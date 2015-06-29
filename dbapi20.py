@@ -782,8 +782,8 @@ class DatabaseAPI20Test(unittest.TestCase):
         try:
             cur = con.cursor()
             self.executeDDL1(cur)
-            cur.execute('%s into %sbooze values (NULL)' % (self.insert, self.table_prefix))
-            cur.execute('select name from %sbooze' % self.table_prefix)
+            cur.execute("%s into %sbarflys values ('a', NULL)" % (self.insert, self.table_prefix))
+            cur.execute('select drink from %sbarflys' % self.table_prefix)
             r = cur.fetchall()
             self.assertEqual(len(r),1)
             self.assertEqual(len(r[0]),1)
