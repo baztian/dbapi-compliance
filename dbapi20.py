@@ -782,6 +782,9 @@ class DatabaseAPI20Test(unittest.TestCase):
         try:
             cur = con.cursor()
             self.executeDDL2(cur)
+            # inserting NULL to the second column, because some drivers might
+            # need the first one to be primary key, which means it needs
+            # to have a non-NULL value
             cur.execute("%s into %sbarflys values ('a', NULL)" % (self.insert, self.table_prefix))
             cur.execute('select drink from %sbarflys' % self.table_prefix)
             r = cur.fetchall()
