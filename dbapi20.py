@@ -781,7 +781,7 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            self.executeDDL1(cur)
+            self.executeDDL2(cur)
             cur.execute("%s into %sbarflys values ('a', NULL)" % (self.insert, self.table_prefix))
             cur.execute('select drink from %sbarflys' % self.table_prefix)
             r = cur.fetchall()
