@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='dbapi-compliance',
-    version='1.14.3',
+    version='1.15.0',
     description='Python DB API 2.0 driver compliance unit test suite.',
     url='https://github.com/baztian/dbapi-compliance',
     license='PD',

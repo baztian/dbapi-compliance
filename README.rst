@@ -26,6 +26,7 @@ Changelog
 =========
 
 - Next version - unreleased
+- 1.15.0 - 2015-07-04
 
   - Apply fix to no-result statement check in test_rowcount being too
     strict.
