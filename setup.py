@@ -10,7 +10,7 @@ setup(
     license='PD',
     author='Stuart Bishop',
     author_email='stuart@stuartbishop.net',
-    py_modules=['dbapi2'],
+    py_modules=['dbapi20'],
     include_package_data=True,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
