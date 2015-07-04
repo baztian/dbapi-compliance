@@ -11,7 +11,7 @@
     -- Ian Bicking
 '''
 
-__version__ = '1.14.3'
+__version__ = '1.15.0'
 
 import unittest
 import time

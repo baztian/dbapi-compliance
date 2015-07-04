@@ -11,7 +11,7 @@
 .. image:: https://img.shields.io/github/tag/baztian/dbapi-compliance.svg
     :target: https://pypi.python.org/pypi/dbapi-compliance/
 
-.. image::https://img.shields.io/pypi/dm/dbapi-compliance.svg
+.. image:: https://img.shields.io/pypi/dm/dbapi-compliance.svg
     :target: https://pypi.python.org/pypi/dbapi-compliance/
 
 A unit test suite to help confirm that Python database drivers conform
@@ -26,6 +26,7 @@ Changelog
 =========
 
 - Next version - unreleased
+- 1.15.0 - 2015-07-04
 
   - Apply fix to no-result statement check in test_rowcount being too
     strict.
