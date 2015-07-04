@@ -6,12 +6,12 @@
    :target: https://travis-ci.org/baztian/dbapi-compliance
 
 .. image:: https://img.shields.io/badge/python-2.6,_2.7,_3.3,_3.4-blue.svg
-    :target: https://pypi.python.org/pypi/dbapi-compliance
+    :target: https://pypi.python.org/pypi/dbapi-compliance/
 
-.. image:: https://pypip.in/version/dbapi-compliance/badge.svg
-    :target: https://pypi.python.org/pypi/dbapi-compliance
+.. image:: https://img.shields.io/github/tag/baztian/dbapi-compliance.svg
+    :target: https://pypi.python.org/pypi/dbapi-compliance/
 
-.. image:: https://pypip.in/download/dbapi-compliance/badge.svg
+.. image::https://img.shields.io/pypi/dm/dbapi-compliance.svg
     :target: https://pypi.python.org/pypi/dbapi-compliance/
 
 A unit test suite to help confirm that Python database drivers conform

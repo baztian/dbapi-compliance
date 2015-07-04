@@ -3,7 +3,7 @@ import os
 from setuptools import setup
 
 setup(
-    name='dbapi20',
+    name='dbapi-compliance',
     version='1.14.3',
     description='Python DB API 2.0 driver compliance unit test suite.',
     url='https://github.com/baztian/dbapi-compliance',
@@ -24,6 +24,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
 )
