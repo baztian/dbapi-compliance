@@ -1,11 +1,10 @@
-import os
-
 from setuptools import setup
 
 setup(
     name='dbapi-compliance',
     version='1.15.0',
     description='Python DB API 2.0 driver compliance unit test suite.',
+    long_description=open('README.rst').read(),
     url='https://github.com/baztian/dbapi-compliance',
     license='PD',
     author='Stuart Bishop',
