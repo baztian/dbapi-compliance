@@ -781,9 +781,12 @@ class DatabaseAPI20Test(unittest.TestCase):
         con = self._connect()
         try:
             cur = con.cursor()
-            self.executeDDL1(cur)
-            cur.execute('%s into %sbooze values (NULL)' % (self.insert, self.table_prefix))
-            cur.execute('select name from %sbooze' % self.table_prefix)
+            self.executeDDL2(cur)
+            # inserting NULL to the second column, because some drivers might
+            # need the first one to be primary key, which means it needs
+            # to have a non-NULL value
+            cur.execute("%s into %sbarflys values ('a', NULL)" % (self.insert, self.table_prefix))
+            cur.execute('select drink from %sbarflys' % self.table_prefix)
             r = cur.fetchall()
             self.assertEqual(len(r),1)
             self.assertEqual(len(r[0]),1)
